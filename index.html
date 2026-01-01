@@ -9,9 +9,7 @@
 </head>
 <body>
     <div id="app"></div>
-
-    <script type="module">
-        // Supabase Config
+   // Supabase Config
         const SUPABASE_URL = 'https://hazjcbrsozvgfuyxsugn.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhempjYnJzb3p2Z2Z1eXhzdWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyNTI1MjAsImV4cCI6MjA4MjgyODUyMH0.5L1FbkUC04Jdx6Syx1iI4wfUKDeA6H1wqLRf1xawgzY';
 
@@ -109,6 +107,23 @@
             }
         }
 
+        function startPolling() {
+            if (state.pollInterval) clearInterval(state.pollInterval);
+            state.pollInterval = setInterval(() => {
+                // Nur pollen wenn Modal NICHT offen ist
+                if (state.selectedPiece === null) {
+                    fetchState();
+                }
+            }, 2000);
+        }
+
+        function stopPolling() {
+            if (state.pollInterval) {
+                clearInterval(state.pollInterval);
+                state.pollInterval = null;
+            }
+        }
+
         async function startGame() {
             state.loading = true;
             render();
@@ -170,6 +185,7 @@
             const success = await updateState(newState);
             if (success) {
                 state.selectedPiece = null;
+                startPolling(); // Polling wieder starten
                 await fetchState();
             } else {
                 alert('Fehler beim Speichern');
@@ -191,6 +207,7 @@
 
         function openPieceModal(index) {
             state.selectedPiece = index;
+            stopPolling(); // Polling pausieren während Modal offen
             render();
             setTimeout(() => {
                 document.getElementById('name-input')?.focus();
@@ -199,6 +216,7 @@
 
         function closeModal() {
             state.selectedPiece = null;
+            startPolling(); // Polling wieder starten
             render();
         }
 
@@ -272,7 +290,7 @@
 
             const totalPieces = state.gameState.totalPieces;
             const pieceRadius = 200;
-            const centerSize = Math.max(80, Math.min(180, 100 + totalPieces * 2));
+            const centerSize = 120; // Feste Größe, da dir dynamisch egal ist
             
             const selectedCount = Object.keys(state.gameState?.selections || {}).length;
             const pieces = Array.from({ length: totalPieces }, (_, i) => {
@@ -408,7 +426,7 @@
             await fetchState();
             state.loading = false;
             render();
-            state.pollInterval = setInterval(fetchState, 2000);
+            startPolling();
         }
 
         window.startGame = startGame;
@@ -420,6 +438,5 @@
         window.state = state;
 
         init();
-    </script>
 </body>
 </html>
